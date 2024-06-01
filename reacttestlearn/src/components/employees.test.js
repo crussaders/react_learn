@@ -1,41 +1,54 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect'; // for the "toBeInTheDocument" matcher
+import Employees from './Employees';
 
-import Employees from "./Employees";
+describe('Employees Component', () => {
+  beforeEach(() => {
+    // Mock the global fetch function
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve([{ id: 1, name: 'John Doe' }, { id: 2, name: 'Jane Doe' }]),
+      })
+    );
+  });
 
-// eslint-disable-next-line no-undef
-global.fetch = jest.fn(() =>
-    Promise.resolve({
-        json: Promise.resolve([
-            { id:457896, name:'Makesh'},
-            {id:457836, name:'Manish'}
-        ]),
-    })
-);
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
 
-describe("Employer table component", () => {
-    beforeEach(() => {
-        fetch.mockClear();
-    })
-});
-
-test("fetch and display data", async () => {
+  test('fetches and displays employee data', async () => {
     render(<Employees />);
-    
+
+    // Check if the heading is rendered
     expect(screen.getByText('Employee Table')).toBeInTheDocument();
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    expect(screen.getByText('Manish')).toBeInTheDocument();
-});
-test('displays error message on fetch failure', async () => {
-    // Mock fetch to reject
-    fetch.mockImplementationOnce(() => Promise.reject('API is down'));
+    // Wait for the employee data to be displayed
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+    });
 
-    render(<DataTable />);
+    // Check if table headers are rendered
+    expect(screen.getByText('ID')).toBeInTheDocument();
+    expect(screen.getByText('Name')).toBeInTheDocument();
 
-    // Wait for the fetch call
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-
-    // Check if the error is logged to the console
-    // You might want to spy on console.error to verify this
+    // Check if table data is rendered
+    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
   });
+
+  test('handles fetch error', async () => {
+    console.error = jest.fn(); // Mock console.error
+
+    global.fetch = jest.fn(() =>
+      Promise.reject(new Error('Failed to fetch'))
+    );
+
+    render(<Employees />);
+
+    await waitFor(() => {
+      expect(console.error).toHaveBeenCalledWith('fetching data', expect.any(Error));
+    });
+  });
+});

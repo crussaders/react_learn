@@ -1,8 +1,12 @@
 import { render, screen } from '@testing-library/react';
+import {describe, expect, test} from '@jest/globals';
 import App from './App';
+import Employees from './components/Employees';
 
-test('renders learn react link', () => {
+jest.mock('./components/Employees', () => () => <div data-testid="employees-component">Employees Component</div>);
+
+test('renders Employees component', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const employeesElement = screen.getByTestId('employees-component');
+  expect(employeesElement).toBeInTheDocument();
 });
